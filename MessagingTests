@@ -1,0 +1,173 @@
+package com.example.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class InternProjectApplication 
+{
+
+    public static void main(String[] args) 
+    {
+       SpringApplication.run(InternProjectApplication.class, args); 
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package com.example.demo;
+
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class MessagesReceived {
+    
+    private int receivedCount = 0;
+    
+    @JmsListener(destination = "your-queue")
+    public void receiveMessage(String message)
+    {
+        receivedCount++;
+        System.out.println("Received message: " + message);
+    }
+    
+    public int getReceivedCount() 
+    {
+        return receivedCount;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package com.example.demo;
+
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.stereotype.Component;
+
+@Component
+public class MessagesSent
+{
+
+    private final JmsTemplate jmsTemplate;
+    
+    public MessagesSent(JmsTemplate jmsTemplate) 
+    {
+        this.jmsTemplate = jmsTemplate;
+    }
+    
+    public void sendMessage(String destination, String message) 
+    {
+    	try
+    	{
+        jmsTemplate.convertAndSend(destination, message);
+    	}
+    	catch(Throwable th)
+    	{
+    		System.out.println(th.getMessage());
+    		
+    	}
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package com.example.demo;
+import javax.annotation.PostConstruct;
+import org.springframework.stereotype.Component;
+@Component
+public class RunTest
+{
+private final MessagesSent messagesSent;
+private final MessagesReceived messagesReceived;
+public RunTest(MessagesSent messagesSent, MessagesReceived messagesReceived)
+{
+this.messagesSent = messagesSent;
+this.messagesReceived = messagesReceived;
+}
+@PostConstruct
+public void runTest()
+{
+	 int totalMessages = 1000;
+long startTime = System.currentTimeMillis();
+try {
+for (int i = 0; i < totalMessages; i++)
+{ 	
+String message = "Message " + i;
+messagesSent.sendMessage("your-queue", message);
+}
+long endTime = System.currentTimeMillis();
+long totalTime = endTime - startTime;
+System.out.println("Total Time Taken (ms): " + totalTime);
+while (messagesReceived.getReceivedCount() < totalMessages)
+{
+Thread.sleep(100);
+}
+System.out.println("Total Messages Sent: " + totalMessages);
+System.out.println("Total Messages Received: " + messagesReceived.getReceivedCount());
+}
+catch (InterruptedException e)
+{
+Thread.currentThread().interrupt();
+System.err.println("Thread interrupted: " + e.getMessage());
+}
+System.exit(1);
+}
+}
+
+
+
+
+
+
